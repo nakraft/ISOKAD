@@ -1,0 +1,199 @@
+{
+  "title": "Fraud Dashboard",
+  "version": "2.1",
+  "settings": {
+    "pagenumber": 1,
+    "editable": true,
+    "fullscreenEnabled": true,
+    "parameters": {},
+    "downloadImageEnabled": true,
+    "queryTimeLimit": 1000000
+  },
+  "pages": [
+    {
+      "title": "First Party Fraud",
+      "reports": [
+        {
+          "title": "Clients with Shared Identifiers (limit 25)",
+          "query": "MATCH p = (:Client) - [s:SHARED_IDENTIFIERS] -> (:Client) WHERE s.count >= 2 RETURN p",
+          "width": 5,
+          "height": 2,
+          "x": 5,
+          "y": 0,
+          "type": "graph",
+          "selection": {
+            "Client": "name",
+            "Mule": "name",
+            "FirstPartyFraudster": "name"
+          },
+          "settings": {
+            "nodePositions": {}
+          }
+        },
+        {
+          "title": "All First Party Fraud Scores",
+          "query": "MATCH(c:Client)\nWHERE c.firstPartyFraudScore IS NOT NULL\nRETURN c.name, c.firstPartyFraudScore, c\nORDER BY c.firstPartyFraudScore DESC\n",
+          "width": 10,
+          "height": 2,
+          "x": 0,
+          "y": 2,
+          "type": "table",
+          "selection": {},
+          "settings": {
+            "nodePositions": {},
+            "allowDownload": true,
+            "styleRules": [
+              {
+                "field": "",
+                "condition": "=",
+                "value": "",
+                "customization": "row color",
+                "customizationValue": "black"
+              }
+            ]
+          }
+        },
+        {
+          "title": "First Party Fraudsters (top 5%)",
+          "query": "MATCH(c:Client)\nWHERE c.firstPartyFraudScore IS NOT NULL\nWITH percentileCont(c.firstPartyFraudScore, 0.95) AS firstPartyFraudThreshold\n\nMATCH(c:Client)\nWHERE c.firstPartyFraudScore > firstPartyFraudThreshold\nRETURN c.name, c.firstPartyFraudScore\nORDER BY c.firstPartyFraudScore DESC",
+          "width": 5,
+          "height": 2,
+          "x": 0,
+          "y": 0,
+          "type": "table",
+          "selection": {},
+          "settings": {
+            "nodePositions": {}
+          }
+        },
+        {
+          "title": "1st Party Fraudsters",
+          "query": "MATCH(c:Client)\nWHERE c.firstPartyFraudScore IS NOT NULL\nWITH percentileCont(c.firstPartyFraudScore, 0.95) AS firstPartyFraudThreshold\n\nMATCH(c:Client)\nWHERE c.firstPartyFraudScore > firstPartyFraudThreshold\nRETURN c\n\n\n",
+          "width": 10,
+          "height": 3,
+          "x": 0,
+          "y": 7,
+          "type": "graph",
+          "selection": {
+            "Client": "name",
+            "Mule": "name",
+            "FirstPartyFraudster": "name"
+          },
+          "settings": {
+            "nodePositions": {}
+          }
+        },
+        {
+          "title": "Clusters of First Party Fraud Rings",
+          "query": "MATCH (c:Client)\nWITH c.firstPartyFraudGroup AS fpGroupID, collect(c.id) AS fGroup\nWITH *, size(fGroup) AS groupSize WHERE groupSize >= 9\nWITH collect(fpGroupID) AS fraudRings\nMATCH p=(c:Client)-[:HAS_SSN|HAS_EMAIL|HAS_PHONE]->()\nWHERE c.firstPartyFraudGroup IN fraudRings\nRETURN p\n\n\n",
+          "width": 5,
+          "height": 2,
+          "x": 0,
+          "y": 4,
+          "type": "graph",
+          "selection": {
+            "Client": "name",
+            "Mule": "name",
+            "SSN": "(label)",
+            "Phone": "(label)",
+            "Email": "(label)",
+            "FirstPartyFraudster": "name"
+          },
+          "settings": {
+            "nodePositions": {}
+          }
+        },
+        {
+          "title": "Clusters of First Party Fraud Rings",
+          "query": "MATCH (c:Client)\nWITH c.firstPartyFraudGroup AS fpGroupID, collect(c.id) AS fGroup\nWITH *, size(fGroup) AS groupSize WHERE groupSize >= 9\nWITH collect(fpGroupID) AS fraudRings\nMATCH p=(c:Client)-[:HAS_SSN|HAS_EMAIL|HAS_PHONE]->()\nWHERE c.firstPartyFraudGroup IN fraudRings\nRETURN c.name, p\n\n\n\n\n",
+          "width": 5,
+          "height": 2,
+          "x": 5,
+          "y": 4,
+          "type": "table",
+          "selection": {},
+          "settings": {}
+        }
+      ]
+    },
+    {
+      "title": "Second Party Fraud",
+      "reports": [
+        {
+          "title": "Transactions Between Labeled Fraudsters and Other Clients ",
+          "query": "MATCH p=(:Client:FirstPartyFraudster)-[]-(:Transaction)-[]-(c:Client)\nWHERE NOT c:FirstPartyFraudster\nRETURN p;\n\n\n",
+          "width": 10,
+          "height": 2,
+          "x": 0,
+          "y": 0,
+          "type": "graph",
+          "selection": {
+            "Client": "name",
+            "Mule": "name",
+            "FirstPartyFraudster": "name",
+            "Transfer": "id",
+            "Transaction": "id",
+            "SecondPartyFraudSuspect": "name",
+            "SecondPartyFraud": "name"
+          },
+          "settings": {
+            "nodePositions": {}
+          }
+        },
+        {
+          "title": "1st Party Fraud Transfers to Second Party ",
+          "query": "MATCH p=(:Client:FirstPartyFraudster)-[:TRANSFER_TO]-(c:Client)\nWHERE NOT c:FirstPartyFraudster\nRETURN p;\n\n\n",
+          "width": 6,
+          "height": 2,
+          "x": 0,
+          "y": 2,
+          "type": "graph",
+          "selection": {
+            "Client": "name",
+            "Mule": "name",
+            "FirstPartyFraudster": "name",
+            "SecondPartyFraudSuspect": "name",
+            "SecondPartyFraud": "name"
+          },
+          "settings": {
+            "nodePositions": {}
+          }
+        },
+        {
+          "title": "1st Party Fraud Transfers to Second Party Fraud ",
+          "query": "MATCH p=(:Client:FirstPartyFraudster)-[:TRANSFER_TO]-(c:Client)\nWHERE NOT c:FirstPartyFraudster\nRETURN p\n\n\n\n\n\n",
+          "width": 6,
+          "height": 2,
+          "x": 0,
+          "y": 4,
+          "type": "table",
+          "selection": {},
+          "settings": {
+            "nodePositions": {},
+            "styleRules": [
+              {
+                "field": "",
+                "condition": "=",
+                "value": "",
+                "customization": "row color",
+                "customizationValue": "black"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Second Party Fraud Scores",
+          "query": "MATCH(c:Client)\nWHERE c.secondPartyFraudScore IS NOT NULL\nRETURN c.name, c.secondPartyFraudScore, c\nORDER BY c.secondPartyFraudScore DESC\n",
+          "width": 4,
+          "height": 2,
+          "x": 6,
+          "y": 2,
+          "type": "table",
+          "selection": {},
+          "settings": {}
+        }
+      ]
+    }
+  ],
+  "parameters": {}
+}
